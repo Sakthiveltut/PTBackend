@@ -262,7 +262,7 @@ for category in categories:
     aurl.clear()
 
     a_url="https://www.amazon.in/s?k="+category+"&page=1&ref=sr_pg_2"
-    amazon(a_url)
+    # amazon(a_url)
     
 for category in categories:
         
@@ -274,7 +274,7 @@ for category in categories:
     page_number=1
 
     f_url="https://www.flipkart.com/search?q="+category+"&otracker=search&otracker1=search&marketplace=FLIPKART&as-show=on&as=off"    
-    flipkart(f_url)
+    # flipkart(f_url)
 
 async def notify(name, price, image, offer, url):
     image_data = requests.get(image).content
