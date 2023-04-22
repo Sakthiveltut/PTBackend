@@ -250,19 +250,19 @@ def flipkart(url):
 #             "Printers","Memory Cards","Projectors","Power Banks"]
 
 
-categories=["Pendrives","Mouses","Keyboards","Printers","Memory Cards","Projectors","Power Banks"]
+# categories=["Pendrives","Mouses","Keyboards","Printers","Memory Cards","Projectors","Power Banks"]
 
-# categories=["Cameras",]
-# for category in categories:
+categories=["Cameras","Wired Headphones","Bluetooth Headphones"]
+for category in categories:
 
-#     aname.clear()
-#     aprice.clear()
-#     aoffer.clear()
-#     aimage.clear()
-#     aurl.clear()
+    aname.clear()
+    aprice.clear()
+    aoffer.clear()
+    aimage.clear()
+    aurl.clear()
 
-#     a_url="https://www.amazon.in/s?k="+category+"&page=1&ref=sr_pg_2"
-#     amazon(a_url)
+    a_url="https://www.amazon.in/s?k="+category+"&page=1&ref=sr_pg_2"
+    amazon(a_url)
     
 for category in categories:
         
@@ -273,8 +273,8 @@ for category in categories:
     furl.clear()
     page_number=1
 
-#     f_url="https://www.flipkart.com/search?q="+category+"&otracker=search&otracker1=search&marketplace=FLIPKART&as-show=on&as=off"    
-#     flipkart(f_url)
+    f_url="https://www.flipkart.com/search?q="+category+"&otracker=search&otracker1=search&marketplace=FLIPKART&as-show=on&as=off"    
+    flipkart(f_url)
 
 async def notify(name, price, image, offer, url):
     image_data = requests.get(image).content
