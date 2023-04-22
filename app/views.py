@@ -252,7 +252,7 @@ def flipkart(url):
 
 # categories=["Pendrives","Mouses","Keyboards","Printers","Memory Cards","Projectors","Power Banks"]
 
-categories=["Cameras","Wired Headphones","Bluetooth Headphones"]
+categories=["Speakers","Pendrives"]
 for category in categories:
 
     aname.clear()
