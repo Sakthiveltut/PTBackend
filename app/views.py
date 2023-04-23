@@ -38,15 +38,6 @@ def fproduct_update(category,name,price,offer,image,url):
         if(FProducts.objects.filter(category=cate,name=name[i],image_link=image[i]).exists()):
             product = FProducts.objects.get(category=cate,name=name[i],image_link=image[i])
 
-            if(product.offer!=offer[i]):
-                product.offer=offer[i]
-
-            if(product.image_link!=image[i]):
-                product.image_link=image[i]
-
-            if(product.url!=url[i]):
-                product.url=url[i]
-
             if(product.price[-1] != price[i]):
 
             
@@ -55,11 +46,21 @@ def fproduct_update(category,name,price,offer,image,url):
                 
                 elif(int(product.price[-1]) > int(price[i])):
                     product.trending=True
+                    print("old:",product.url)
+                    print("New:",url[i])
                     notify = Notify.objects.create(name=name[i],image_link=image[i],url="http://127.0.0.1:8000/collections/"+str(category)+"/"+str(product.name).replace(" ","%20"),offer=offer[i],price=price[i])
 
                 product.price.append(price[i])
                 product.date.append(todayDate)
 
+            if(product.offer!=offer[i]):
+                product.offer=offer[i]
+
+            if(product.image_link!=image[i]):
+                product.image_link=image[i]
+
+            if(product.url!=url[i]):
+                product.url=url[i]
             
             product.save()
 
@@ -78,6 +79,8 @@ def aproduct_update(category,name,price,offer,image,url):
 
                 if(int(product.price[-1]) > int(price[i])):
                     product.trending=True
+                    print("old:",product.url)
+                    print("New:",url[i])
                     notify = Notify.objects.create(name=name[i],image_link=image[i],url="http://127.0.0.1:8000/collections/"+str(category)+"/"+str(product.name).replace(" ","%20"),offer=offer[i],price=price[i])
                 
                 elif(int(product.price[-1]) < int(price[i])):
@@ -108,7 +111,7 @@ def amazon(url):
         response = requests.get(url,headers=headers)
         soup = BeautifulSoup(response.content, 'lxml')
 
-        class1 = soup.find("div",class_="sg-col-20-of-24")
+        class1 = soup.find_all("div",class_="sg-col-20-of-24")
         # class2=class1.find_all("div",class_="s-widget-container")
             
         # for class3 in class2:
@@ -171,8 +174,22 @@ def amazon(url):
     print(len(aurl))
     print("--------------------------------------------------------------------------------------------------------------")
 
-    aproduct_update(category,aname,aprice,aoffer,aimage,aurl)
 
+    lname=len(aname)
+    if(lname==len(aprice) and lname==len(aoffer) and lname==len(aimage) and lname==len(aurl)):
+        aproduct_update(category,aname,aprice,aoffer,aimage,aurl)
+    else:
+        aname.clear()
+        aprice.clear()
+        aoffer.clear()
+        aimage.clear()
+        aurl.clear()
+
+        a_url="https://www.amazon.in/s?k="+category+"&page=1&ref=sr_pg_2"
+        amazon(a_url)
+    
+
+    
 
 def flipkart(url):
     global page_number
@@ -262,7 +279,7 @@ for category in categories:
     aurl.clear()
 
     a_url="https://www.amazon.in/s?k="+category+"&page=1&ref=sr_pg_2"
-    # amazon(a_url)
+    amazon(a_url)
     
 for category in categories:
         
@@ -274,7 +291,7 @@ for category in categories:
     page_number=1
 
     f_url="https://www.flipkart.com/search?q="+category+"&otracker=search&otracker1=search&marketplace=FLIPKART&as-show=on&as=off"    
-    # flipkart(f_url)
+    flipkart(f_url)
 
 async def notify(name, price, image, offer, url):
     image_data = requests.get(image).content
