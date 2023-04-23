@@ -31,23 +31,22 @@ aimage = []
 aoffer = []
 aurl = []
 
+
+#---------------------------------------------------Product Update-------------------------------------------------#
 def fproduct_update(category,name,price,offer,image,url):
     cate = Category.objects.get(name=category)
     for i in range(len(name)):
 
+        print(str(i)+"|"+str(len(name)),"Flipkart"+str(category)+"products updated")
         if(FProducts.objects.filter(category=cate,name=name[i],image_link=image[i]).exists()):
             product = FProducts.objects.get(category=cate,name=name[i],image_link=image[i])
-
             if(product.price[-1] != price[i]):
 
-            
-                if(int(product.price[-1]) < int(price[i])):
+                if(product.price[-1] < price[i]):
                     product.trending=False
                 
-                elif(int(product.price[-1]) > int(price[i])):
+                elif(product.price[-1] > price[i]):
                     product.trending=True
-                    print("old:",product.url)
-                    print("New:",url[i])
                     notify = Notify.objects.create(name=name[i],image_link=image[i],url="http://127.0.0.1:8000/collections/"+str(category)+"/"+str(product.name).replace(" ","%20"),offer=offer[i],price=price[i])
 
                 product.price.append(price[i])
@@ -72,18 +71,15 @@ def aproduct_update(category,name,price,offer,image,url):
     cate = Category.objects.get(name=category)
     for i in range(len(name)):
 
+        print(str(i)+"|"+str(len(name)),"Amazon"+str(category)+"products updated")
         if(AProducts.objects.filter(category=cate,name=name[i],image_link=image[i]).exists()):
             product = AProducts.objects.get(category=cate,name=name[i],image_link=image[i])
-
             if(product.price[-1] != price[i]):
-
-                if(int(product.price[-1]) > int(price[i])):
+                if(product.price[-1] > price[i]):
                     product.trending=True
-                    print("old:",product.url)
-                    print("New:",url[i])
                     notify = Notify.objects.create(name=name[i],image_link=image[i],url="http://127.0.0.1:8000/collections/"+str(category)+"/"+str(product.name).replace(" ","%20"),offer=offer[i],price=price[i])
                 
-                elif(int(product.price[-1]) < int(price[i])):
+                elif(product.price[-1] < price[i]):
                     product.trending=False
 
                 product.price.append(price[i])
@@ -106,6 +102,9 @@ def aproduct_update(category,name,price,offer,image,url):
         else:
             product = AProducts.objects.create(category=cate,name=name[i],image_link=image[i],url=url[i],offer=offer[i],price=[price[i]],date=[todayDate])
 
+#---------------------------------------------------------------------------------------------------------------------#
+
+#---------------------------------------------------Details gathering-------------------------------------------------#
 def amazon(url):
     while True:
         response = requests.get(url,headers=headers)
@@ -189,8 +188,6 @@ def amazon(url):
         amazon(a_url)
     
 
-    
-
 def flipkart(url):
     global page_number
     while True:
@@ -263,12 +260,12 @@ def flipkart(url):
     fproduct_update(category,fname,fprice,foffer,fimage,furl)
     
 
-# categories=["Cameras","Headphones","Speakers","Pendrives","Mouses","Keyboards",
-#             "Printers","Memory Cards","Projectors","Power Banks"]
+#-----------------------------------------------------------------------------------------------------------------------#
 
+#---------------------------------------------------Product Category-------------------------------------------------#
 
+# categories=["Cameras","Headphones","Speakers","Pendrives","Mouses","Keyboards","Printers","Memory Cards","Projectors","Power Banks"]
 # categories=["Pendrives","Mouses","Keyboards","Printers","Memory Cards","Projectors","Power Banks"]
-
 categories=["Speakers","Pendrives"]
 for category in categories:
 
@@ -279,7 +276,7 @@ for category in categories:
     aurl.clear()
 
     a_url="https://www.amazon.in/s?k="+category+"&page=1&ref=sr_pg_2"
-    amazon(a_url)
+    # amazon(a_url)
     
 for category in categories:
         
@@ -291,8 +288,11 @@ for category in categories:
     page_number=1
 
     f_url="https://www.flipkart.com/search?q="+category+"&otracker=search&otracker1=search&marketplace=FLIPKART&as-show=on&as=off"    
-    flipkart(f_url)
+    # flipkart(f_url)
 
+#--------------------------------------------------------------------------------------------------------------------#
+
+#---------------------------------------------------Telegram Notification--------------------------------------------#
 async def notify(name, price, image, offer, url):
     image_data = requests.get(image).content
     bot = Bot(token="5688622265:AAFbhvwU-oxz27kaEYQU4otbeTpfAYrjvsE")
@@ -306,7 +306,7 @@ if(notification):
         asyncio.run(notify(product.name,product.price,product.image_link,product.offer,product.url))
         product.delete()
 
-
+#-------------------------------------------------------------------------------------------------------------------#
 
 
 def home(request):
@@ -326,21 +326,6 @@ def home(request):
 # context = {'name': name[i],'price': price[i],'image':image[i],'link':"http://127.0.0.1:8000/collections/"+str(category)+"/"+product.name}
 # def notification(request):
 #     return render(request,"app/notification.html",context)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 # def oneTwoPage(c_url):
