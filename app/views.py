@@ -65,8 +65,8 @@ def fproduct_update(category,name,pid,price,offer,image,url):
     cate = Category.objects.get(name=category)
     for i in range(len(name)):
 
-        if(FProducts.objects.filter(category=cate,lid=pid[i]).exists()):
-            product = FProducts.objects.get(category=cate,lid=pid[i])
+        if(FProducts.objects.filter(category=cate,fid=pid[i]).exists()):
+            product = FProducts.objects.get(category=cate,fid=pid[i])
             if(product.price[-1] != price[i]):
                 print("Price Changed",product.price[-1], price[i])
                 print(url[i])
