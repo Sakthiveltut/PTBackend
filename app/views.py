@@ -41,9 +41,9 @@ aid=[]
 #---------------------------------------------------Telegram Notification--------------------------------------------#
 async def notify(name, price, image, offer, url):
     image_data = requests.get(image).content
-    bot = Bot(token="5688622265:AAFbhvwU-oxz27kaEYQU4otbeTpfAYrjvsE")
+    bot = Bot(token="6269096560:AAGur6hchaokvs6QS2EmmZXNw9kbbjbQbo4")
     message = f'<b>{name}\nPrice: {price}\nOffer:{offer}</b>\n\n{url}'
-    await bot.send_photo(chat_id=-987935439, photo=image_data,caption=message,parse_mode=ParseMode.HTML)
+    await bot.send_photo(chat_id=-1001846594182, photo=image_data,caption=message,parse_mode=ParseMode.HTML)
 
 
 #-------------------------------------------------------------------------------------------------------------------#
