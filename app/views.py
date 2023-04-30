@@ -43,6 +43,7 @@ async def notify(name, price, image, offer, url):
     image_data = requests.get(image).content
     bot = Bot(token="6269096560:AAGur6hchaokvs6QS2EmmZXNw9kbbjbQbo4")
     message = f'<b>{name}\nPrice: {price}\nOffer:{offer}</b>\n\n{url}'
+    sleep(5)
     await bot.send_photo(chat_id=-1001846594182, photo=image_data,caption=message,parse_mode=ParseMode.HTML)
 
 
@@ -67,16 +68,18 @@ def fproduct_update(category,name,pid,price,offer,image,url):
 
         if(FProducts.objects.filter(category=cate,fid=pid[i]).exists()):
             product = FProducts.objects.get(category=cate,fid=pid[i])
+
             if(product.price[-1] != price[i]):
                 print("Price Changed",product.price[-1], price[i])
                 print(url[i])
                 print("----------------------------------------------------------------------------------------------")
+
                 if(product.price[-1] < price[i]):
                     product.trending=False
                 
                 elif(product.price[-1] > price[i]):
                     product.trending=True
-                    notify = Notify.objects.create(name=name[i],image_link=image[i],url="https://price-tracker.up.railway.app/collections/"+str(category)+"/"+str(product.name).replace(" ","%20"),offer=offer[i],price=price[i])
+                    Notify.objects.create(name=name[i],image_link=image[i],url="https://price-tracker.up.railway.app/collections/"+str(category)+"/"+str(product.name).replace(" ","%20"),offer=offer[i],price=price[i])
 
                 product.price.append(price[i])
                 product.date.append(todayDate)
@@ -333,6 +336,7 @@ for category in categories:
     aoffer.clear()
     aimage.clear()
     aurl.clear()
+    aid.clear()
 
     a_url="https://www.amazon.in/s?k="+category+"&page=1&ref=sr_pg_2"
     amazon(a_url)
@@ -342,6 +346,7 @@ for category in categories:
     foffer.clear()
     fimage.clear()
     furl.clear()
+    fid.clear()
     page_number=1
 
     f_url="https://www.flipkart.com/search?q="+category+"&otracker=search&otracker1=search&marketplace=FLIPKART&as-show=on&as=off"    
@@ -351,7 +356,7 @@ for category in categories:
     if(notification):
         for product in notification:
             asyncio.run(notify(product.name,product.price,product.image_link,product.offer,product.url))
-            sleep(5)
+            sleep(2)
             product.delete()
 
 #--------------------------------------------------------------------------------------------------------------------#
