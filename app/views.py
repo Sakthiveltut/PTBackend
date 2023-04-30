@@ -10,12 +10,17 @@ from bs4 import BeautifulSoup
 # from selenium.webdriver.common.by import By
 from time import sleep
 from .models import *
+from urllib.parse import urlparse, parse_qs
+import urllib.parse
 today = date.today()
 todayDate=today.strftime("%d-%m-%Y")
 
+from fake_useragent import UserAgent
+ua = UserAgent()
+headers = {'User-Agent': ua.random}
 
-headers = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36"}
+# headers = {
+#     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36"}
 
 context = {}
 
@@ -24,30 +29,54 @@ fprice = []
 fimage = []
 foffer = []
 furl = []
+fid=[]
 
 aname = []
 aprice = []
 aimage = []
 aoffer = []
 aurl = []
+aid=[]
 
+#---------------------------------------------------Telegram Notification--------------------------------------------#
+async def notify(name, price, image, offer, url):
+    image_data = requests.get(image).content
+    bot = Bot(token="5688622265:AAFbhvwU-oxz27kaEYQU4otbeTpfAYrjvsE")
+    message = f'<b>{name}\nPrice: {price}\nOffer:{offer}</b>\n\n{url}'
+    await bot.send_photo(chat_id=-987935439, photo=image_data,caption=message,parse_mode=ParseMode.HTML)
+
+
+#-------------------------------------------------------------------------------------------------------------------#
+
+def fidFinder(url):
+    parsed_url = urlparse(url)
+    query_params = parse_qs(parsed_url.query)
+    lid_value = query_params['lid'][0]
+    return lid_value
+
+# def aidFinder(url):
+#     aid = urllib.parse.unquote(url)
+#     aid=aid.split("dp/")[1]
+#     aid=aid.split("/")[0]
+#     return aid
 
 #---------------------------------------------------Product Update-------------------------------------------------#
-def fproduct_update(category,name,price,offer,image,url):
+def fproduct_update(category,name,pid,price,offer,image,url):
     cate = Category.objects.get(name=category)
     for i in range(len(name)):
 
-        print(str(i)+"|"+str(len(name)),"Flipkart"+str(category)+"products updated")
-        if(FProducts.objects.filter(category=cate,name=name[i],image_link=image[i]).exists()):
-            product = FProducts.objects.get(category=cate,name=name[i],image_link=image[i])
+        if(FProducts.objects.filter(category=cate,lid=pid[i]).exists()):
+            product = FProducts.objects.get(category=cate,lid=pid[i])
             if(product.price[-1] != price[i]):
-
+                print("Price Changed",product.price[-1], price[i])
+                print(url[i])
+                print("----------------------------------------------------------------------------------------------")
                 if(product.price[-1] < price[i]):
                     product.trending=False
                 
                 elif(product.price[-1] > price[i]):
                     product.trending=True
-                    notify = Notify.objects.create(name=name[i],image_link=image[i],url="http://127.0.0.1:8000/collections/"+str(category)+"/"+str(product.name).replace(" ","%20"),offer=offer[i],price=price[i])
+                    notify = Notify.objects.create(name=name[i],image_link=image[i],url="https://price-tracker.up.railway.app/collections/"+str(category)+"/"+str(product.name).replace(" ","%20"),offer=offer[i],price=price[i])
 
                 product.price.append(price[i])
                 product.date.append(todayDate)
@@ -64,20 +93,25 @@ def fproduct_update(category,name,price,offer,image,url):
             product.save()
 
         else:
-            product = FProducts.objects.create(category=cate,name=name[i],image_link=image[i],url=url[i],offer=offer[i],price=[price[i]],date=[todayDate])
+            product = FProducts.objects.create(category=cate,name=name[i],fid=pid[i],image_link=image[i],url=url[i],offer=offer[i],price=[price[i]],date=[todayDate])
 
 
-def aproduct_update(category,name,price,offer,image,url):
+def aproduct_update(category,name,pid,price,offer,image,url):
     cate = Category.objects.get(name=category)
     for i in range(len(name)):
 
-        print(str(i)+"|"+str(len(name)),"Amazon"+str(category)+"products updated")
-        if(AProducts.objects.filter(category=cate,name=name[i],image_link=image[i]).exists()):
-            product = AProducts.objects.get(category=cate,name=name[i],image_link=image[i])
+        if(AProducts.objects.filter(category=cate,aid=pid[i]).exists()):
+
+            product = AProducts.objects.get(category=cate,aid=pid[i])
+
             if(product.price[-1] != price[i]):
+                print("Price Changed",product.price[-1], price[i])
+                print(url[i])
+                print("----------------------------------------------------------------------------------------------")
+
                 if(product.price[-1] > price[i]):
                     product.trending=True
-                    notify = Notify.objects.create(name=name[i],image_link=image[i],url="http://127.0.0.1:8000/collections/"+str(category)+"/"+str(product.name).replace(" ","%20"),offer=offer[i],price=price[i])
+                    notify = Notify.objects.create(name=name[i],image_link=image[i],url="https://price-tracker.up.railway.app/collections/"+str(category)+"/"+str(product.name).replace(" ","%20"),offer=offer[i],price=price[i])
                 
                 elif(product.price[-1] < price[i]):
                     product.trending=False
@@ -100,7 +134,7 @@ def aproduct_update(category,name,price,offer,image,url):
             product.save()
 
         else:
-            product = AProducts.objects.create(category=cate,name=name[i],image_link=image[i],url=url[i],offer=offer[i],price=[price[i]],date=[todayDate])
+            product = AProducts.objects.create(category=cate,name=name[i],aid=pid[i],image_link=image[i],url=url[i],offer=offer[i],price=[price[i]],date=[todayDate])
 
 #---------------------------------------------------------------------------------------------------------------------#
 
@@ -110,79 +144,92 @@ def amazon(url):
         response = requests.get(url,headers=headers)
         soup = BeautifulSoup(response.content, 'lxml')
 
-        class1 = soup.find_all("div",class_="sg-col-20-of-24")
-        # class2=class1.find_all("div",class_="s-widget-container")
-            
-        # for class3 in class2:
-            # all_products=class3.find_all("div",class_="s-card-container s-overflow-hidden aok-relative puis-wide-grid-style puis-wide-grid-style-t1 puis-include-content-margin puis s-latency-cf-section s-card-border")
 
-        for all_product in class1:
-            containers = all_product.find_all("div",class_="sg-row")
+        main_class=soup.find("span",class_="rush-component s-latency-cf-section")
 
-            for container in containers:
+        if main_class is not None and main_class.find('div', class_='sg-col-20-of-24'):
 
-                products = container.find_all('div', class_='sg-col sg-col-4-of-12 sg-col-8-of-16 sg-col-12-of-20 sg-col-12-of-24 s-list-col-right')
-                for product in products:
-                    if(product.find('span', {'class': 'a-price-whole'}) and product.find_all("div",class_="a-row a-size-base a-color-base")):
-                        names = product.find('span', {'class': 'a-size-medium a-color-base a-text-normal'})
-                        # for name in names:
-                        name = names.text
-                        name=str(name).replace("/"," ").strip()
-                        aname.append(name)
+            class1 = main_class.find_all('div',class_="sg-col-20-of-24")
 
-                        prices = product.find('span', {'class': 'a-price-whole'})
-                        # for price in prices:
-                        price = prices.text
-                        price=str(price).replace(",","")
-                        aprice.append(price)
+            # class2=class1.find_all("div",class_="s-widget-container")
+                
+            # for class3 in class2:
+                # all_products=class3.find_all("div",class_="s-card-container s-overflow-hidden aok-relative puis-wide-grid-style puis-wide-grid-style-t1 puis-include-content-margin puis s-latency-cf-section s-card-border")
 
-                        offers = product.find("div",class_="a-row a-size-base a-color-base")
-                        # for offers1 in offers:
-                        offer=offers.find_all("span")[-2].text
-                        offer=str(offer).replace("(","").replace(")","")
-                        aoffer.append(offer)
+            for all_product in class1:
+                containers = all_product.find_all("div",class_="sg-row")
+
+                for container in containers:
+
+                    products = container.find_all('div', class_='sg-col sg-col-4-of-12 sg-col-8-of-16 sg-col-12-of-20 sg-col-12-of-24 s-list-col-right')
+                    for product in products:
+                        if(product.find('span', {'class': 'a-price-whole'}) and product.find_all("div",class_="a-row a-size-base a-color-base")):
+                            
+                            data_asin = all_product['data-asin']
+                            if data_asin:
+                                aid.append(data_asin)
+
+                            names = product.find('span', {'class': 'a-size-medium a-color-base a-text-normal'})
+                            # for name in names:
+                            name = names.text
+                            name=str(name).replace("/"," ").strip()
+                            aname.append(name)
+
+                            prices = product.find('span', {'class': 'a-price-whole'})
+                            # for price in prices:
+                            price = prices.text
+                            price=str(price).replace(",","")
+                            aprice.append(price)
+
+                            offers = product.find("div",class_="a-row a-size-base a-color-base")
+                            # for offers1 in offers:
+                            offer=offers.find_all("span")[-2].text
+                            offer=str(offer).replace("(","").replace(")","")
+                            aoffer.append(offer)
+                            break
+
+                    for product in products:
+                        if(product.find('span', {'class': 'a-price-whole'}) and product.find_all("div",class_="a-row a-size-base a-color-base")):
+                            product_images = container.find_all("div",class_="sg-col sg-col-4-of-12 sg-col-4-of-16 sg-col-4-of-20 sg-col-4-of-24 s-list-col-left")
+                            for product_image in product_images:
+                                left=product_image.find("div",class_="s-product-image-container aok-relative s-text-center s-image-overlay-grey s-padding-left-small s-padding-right-small s-flex-expand-height")
+                                images=left.find("img",class_="s-image")
+                                # for image in images:
+                                aimage.append(images.get("src"))
+                                urls=left.find("a",class_="a-link-normal s-no-outline")
+                                # for url in urls:
+                                url = urls.get("href")
+                                aurl.append("https://amazon.in"+str(url))
+                                break
                         break
 
-                for product in products:
-                    if(product.find('span', {'class': 'a-price-whole'}) and product.find_all("div",class_="a-row a-size-base a-color-base")):
-                        product_images = container.find_all("div",class_="sg-col sg-col-4-of-12 sg-col-4-of-16 sg-col-4-of-20 sg-col-4-of-24 s-list-col-left")
-                        for product_image in product_images:
-                            left=product_image.find("div",class_="s-product-image-container aok-relative s-text-center s-image-overlay-grey s-padding-left-small s-padding-right-small s-flex-expand-height")
-                            images=left.find("img",class_="s-image")
-                            # for image in images:
-                            aimage.append(images.get("src"))
-                            urls=left.find("a",class_="a-link-normal s-no-outline")
-                            # for url in urls:
-                            url = urls.get("href")
-                            aurl.append("https://amazon.in"+str(url))
-                            break
+            next_url = soup.find('a',class_='s-pagination-next')
+            if next_url is None:
                     break
-
-        next_url = soup.find('a',class_='s-pagination-next')
-        if next_url is None:
-                break
-        next=next_url.get("href")
-        url="https://www.amazon.in"+str(next)
-        print(url)
+            next=next_url.get("href")
+            url="https://www.amazon.in"+str(next)
+            print(url)
 
     print("--------------------------------------------------------------------------------------------------------------")
-    print(len(aname))
-    print(len(aprice))
-    print(len(aoffer))
-    print(len(aimage))
-    print(len(aurl))
+    print("Name",len(aname))
+    print("Price",len(aprice))
+    print("Offer",len(aoffer))
+    print("Image",len(aimage))
+    print("Url",len(aurl))
+    print("Id",len(aid))
     print("--------------------------------------------------------------------------------------------------------------")
 
 
     lname=len(aname)
     if(lname==len(aprice) and lname==len(aoffer) and lname==len(aimage) and lname==len(aurl)):
-        aproduct_update(category,aname,aprice,aoffer,aimage,aurl)
+        aproduct_update(category,aname,aid,aprice,aoffer,aimage,aurl)
     else:
         aname.clear()
         aprice.clear()
         aoffer.clear()
         aimage.clear()
         aurl.clear()
+        aid.clear()
 
         a_url="https://www.amazon.in/s?k="+category+"&page=1&ref=sr_pg_2"
         amazon(a_url)
@@ -197,11 +244,20 @@ def flipkart(url):
         b_headphones = soup.find("div", class_="_1YokD2 _3Mn1Gg").find_all(class_="_1AtVbE col-12-12")
         for b_headphone in b_headphones:
             checks = b_headphone.find_all("div", class_="_13oc-S")
+
+            # elements = check.find_all('div', {'data-id': True})
+
+            # for element in elements:
             for check in checks:
                 check1 = check.find_all("div", class_="_4ddWXP")
                 for check2 in check1:
                     # check available and offer
                     if not (check2.find("span", class_="_192laR")) and (check2.find("div", class_="_3Ay6Sb")):
+                        
+                        # data_asin = element['data-id']
+                            # if data_asin:
+                            #     fid.append(data_asin)
+
                         # Product Name List
                         FWHp = check2.find_all("a", class_="s1Q9rs")
                         for a_tag in FWHp:
@@ -249,24 +305,27 @@ def flipkart(url):
         page_number+=1
         url = "https://www.flipkart.com/search?q="+category+"&otracker=search&otracker1=search&marketplace=FLIPKART&as-show=on&as=off&page="+str(page_number)
         print(url)
+    
+    for i in furl:
+        fid.append(fidFinder(i))
 
     print("--------------------------------------------------------------------------------------------------------------")
-    print(len(fname))
-    print(len(fprice))
-    print(len(foffer))
-    print(len(fimage))
-    print(len(furl))
+    print("Name",len(fname))
+    print("Price",len(fprice))
+    print("Offer",len(foffer))
+    print("Image",len(fimage))
+    print("Url",len(furl))
+    print("Id",len(fid))
     print("--------------------------------------------------------------------------------------------------------------")
-    fproduct_update(category,fname,fprice,foffer,fimage,furl)
+    fproduct_update(category,fname,fid,fprice,foffer,fimage,furl)
     
 
 #-----------------------------------------------------------------------------------------------------------------------#
 
 #---------------------------------------------------Product Category-------------------------------------------------#
 
-# categories=["Cameras","Headphones","Speakers","Pendrives","Mouses","Keyboards","Printers","Memory Cards","Projectors","Power Banks"]
-# categories=["Pendrives","Mouses","Keyboards","Printers","Memory Cards","Projectors","Power Banks"]
-categories=["Speakers","Pendrives"]
+categories=["Cameras","Wired Headphones","Bluetooth Headphones","Speakers","Pendrives","Mouses","Keyboards","Printers","Memory Cards","Projectors","Power Banks"]
+
 for category in categories:
 
     aname.clear()
@@ -276,9 +335,7 @@ for category in categories:
     aurl.clear()
 
     a_url="https://www.amazon.in/s?k="+category+"&page=1&ref=sr_pg_2"
-    # amazon(a_url)
-    
-for category in categories:
+    amazon(a_url)
         
     fname.clear()
     fprice.clear()
@@ -288,25 +345,17 @@ for category in categories:
     page_number=1
 
     f_url="https://www.flipkart.com/search?q="+category+"&otracker=search&otracker1=search&marketplace=FLIPKART&as-show=on&as=off"    
-    # flipkart(f_url)
+    flipkart(f_url)
+
+    notification = Notify.objects.all()
+    if(notification):
+        for product in notification:
+            asyncio.run(notify(product.name,product.price,product.image_link,product.offer,product.url))
+            sleep(5)
+            product.delete()
 
 #--------------------------------------------------------------------------------------------------------------------#
 
-#---------------------------------------------------Telegram Notification--------------------------------------------#
-async def notify(name, price, image, offer, url):
-    image_data = requests.get(image).content
-    bot = Bot(token="5688622265:AAFbhvwU-oxz27kaEYQU4otbeTpfAYrjvsE")
-    message = f'<b>{name}\nPrice: {price}\nOffer:{offer}</b>\n\n{url}'
-    await bot.send_photo(chat_id=-987935439, photo=image_data,caption=message,parse_mode=ParseMode.HTML)
-
-
-notification = Notify.objects.all()
-if(notification):
-    for product in notification:
-        asyncio.run(notify(product.name,product.price,product.image_link,product.offer,product.url))
-        product.delete()
-
-#-------------------------------------------------------------------------------------------------------------------#
 
 
 def home(request):
@@ -458,11 +507,3 @@ def home(request):
 #         getLink(c_url)
 #     else:
 #         aproduct_update(category,aname,aprice,aoffer,aimage,aurl)
-
-
-
-
-
-
-
-

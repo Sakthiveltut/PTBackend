@@ -21,6 +21,7 @@ class Category(models.Model):
 class FProducts(models.Model):
     category = models.ForeignKey(Category, on_delete=models.CASCADE)
     name = models.TextField(max_length=2000)
+    fid = models.CharField(max_length=100)
     image_link = models.CharField(max_length=500)
     url = models.CharField(max_length=1000)
     offer = models.CharField(max_length=100)
@@ -34,6 +35,7 @@ class FProducts(models.Model):
 class AProducts(models.Model):
     category = models.ForeignKey(Category, on_delete=models.CASCADE)
     name = models.TextField(max_length=1000)
+    aid = models.CharField(max_length=100)
     image_link = models.CharField(max_length=500)
     url = models.CharField(max_length=1000)
     offer = models.CharField(max_length=100)
